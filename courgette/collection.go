@@ -26,7 +26,7 @@ func (c *Collection) SortNew() (numSorted int, err error) {
 // AnalyzeContents of a given subdirectory.
 func (c *Collection) AnalyzeContents(subdir string) (numFiles int, err error) {
 	for _, subd := range c.Contents {
-		if subd == subdir {
+		if subd.Name == subdir {
 			numFiles, err = subd.Analyze()
 			return
 		}

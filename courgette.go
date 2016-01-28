@@ -16,6 +16,7 @@ func main() {
 		fmt.Println("Could not load configuration")
 		os.Exit(-1)
 	}
+
 	if err := c.Check(); err != nil {
 		fmt.Println("Invalid Configuration")
 		os.Exit(-1)
