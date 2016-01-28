@@ -11,7 +11,7 @@ type Config struct {
 }
 
 // Load the configuration
-func (c *Config) Load() (err error) {
+func (c *Config) Load(configPath string) (err error) {
 	return
 }
 
