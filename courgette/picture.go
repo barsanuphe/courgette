@@ -1,6 +1,10 @@
 package courgette
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
+	"io"
+	"os"
 	"regexp"
 
 	"github.com/barsanuphe/goexiftool"
@@ -12,6 +16,7 @@ var reg = regexp.MustCompile(`^(.*?)_(\d{4,5})(-bw\d*)?(-\d*)?(\.jpg|\.cr2|\.mov
 // Picture can manipulate a picture file.
 type Picture struct {
 	goexiftool.MediaFile
+	Hash    string
 	NewPath string
 	IsBW    bool
 	Number  int
@@ -36,5 +41,28 @@ func (p *Picture) IsNew(c Config) (isNew bool, err error) {
 
 // Rotate losslessly the Picture.
 func (p *Picture) Rotate() (err error) {
+	return
+}
+
+// ComputeHash calculates the hash of the Picture file.
+func (p *Picture) ComputeHash() (err error) {
+	var result []byte
+	file, err := os.Open(p.Filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	pictureHash := sha512.New()
+	if _, err := io.Copy(pictureHash, file); err != nil {
+		return err
+	}
+	p.Hash = hex.EncodeToString(pictureHash.Sum(result))
+	return
+}
+
+// Diff compares two Pictures.
+func (p *Picture) Diff(otherP Picture) (isSame bool, diffText string, err error) {
+	// TODO
 	return
 }
