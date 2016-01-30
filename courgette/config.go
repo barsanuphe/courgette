@@ -1,6 +1,7 @@
 package courgette
 
 import (
+	"errors"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -32,17 +33,27 @@ func (c *Config) Load(configPath string) (err error) {
 	conf.AddConfigPath("$HOME/.config/courgette")
 	conf.AddConfigPath(".")
 	err = conf.ReadInConfig()
-	if err != nil {
+	if err == nil {
 		c.Root = conf.GetString("config.directory")
 		c.Incoming = conf.GetString("config.incoming")
 		c.Lenses = conf.GetStringMapString("lenses")
 		c.Cameras = conf.GetStringMapString("cameras")
 	}
+
 	return
 }
 
 // Check the configuration.
 func (c *Config) Check() (err error) {
+	// check collection exists
+	if _, err = os.Stat(c.Root); err != nil {
+		return err
+	}
+	// check incoming subdir is defined
+	// TODO check it's not absolute or nested
+	if c.Incoming == "" {
+		return errors.New("Incoming subdirectory not set")
+	}
 	return
 }
 

@@ -2,7 +2,11 @@
 // Useful if you organize your picture with a different folder for each month.
 package courgette
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+)
 
 // Collection represents a collection of Pictures
 type Collection struct {
@@ -12,6 +16,8 @@ type Collection struct {
 
 // Import from card.
 func (c *Collection) Import(from string) (numImported int, err error) {
+	incomingTarget := filepath.Join(c.Root, c.Incoming)
+	fmt.Println("Moving pictures to " + incomingTarget)
 	// from -> c.Incoming
 	// copy then remove source
 	return
