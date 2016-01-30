@@ -5,7 +5,10 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"path/filepath"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/barsanuphe/goexiftool"
 )
@@ -35,8 +38,8 @@ func (p *Picture) ConvertToBW() (err error) {
 }
 
 // IsNew is true if it is.
-func (p *Picture) IsNew(c Config) (isNew bool, err error) {
-	return
+func (p *Picture) IsNew(c Config) (isNew bool) {
+	return strings.Contains(p.Filename, filepath.Join(c.Root, c.Incoming))
 }
 
 // Rotate losslessly the Picture.
@@ -63,6 +66,9 @@ func (p *Picture) ComputeHash() (err error) {
 
 // Diff compares two Pictures.
 func (p *Picture) Diff(otherP Picture) (isSame bool, diffText string, err error) {
-	// TODO
+	if p.Hash == otherP.Hash && reflect.DeepEqual(p.Info, otherP.Info) {
+		return true, "", nil
+	}
+	// TODO diff
 	return
 }

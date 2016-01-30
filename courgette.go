@@ -4,20 +4,45 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/barsanuphe/courgette/courgette"
 	"github.com/codegangsta/cli"
 )
 
+func importPictures(cc courgette.Collection, cardName string) (err error) {
+	if cardName != "" {
+		// check it's a valid external mount point.
+		completeCardPath, err := cc.CheckValidCardReader(cardName)
+		if os.IsNotExist(err) {
+			fmt.Println("Card '" + cardName + "' not found. Is it mounted?")
+			return err
+		} else if err != nil {
+			return err
+		}
+		numImported, err := cc.Import(completeCardPath)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Imported " + strconv.Itoa(numImported) + " pictures.")
+	}
+	numSorted, err := cc.SortNew()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Sorted " + strconv.Itoa(numSorted) + " pictures.")
+	return
+}
+
 func main() {
 	fmt.Printf("\n# # # C O U R G E T T E # # #\n\n")
-	c := courgette.Collection{}
-	if err := c.Load("courgette"); err != nil {
+	cc := courgette.Collection{}
+	if err := cc.Load("courgette"); err != nil {
 		fmt.Println("Could not load configuration")
 		os.Exit(-1)
 	}
 
-	if err := c.Check(); err != nil {
+	if err := cc.Check(); err != nil {
 		fmt.Println("Invalid Configuration")
 		os.Exit(-1)
 	}
@@ -35,8 +60,20 @@ func main() {
 			ArgsUsage:   "[DISK_NAME]",
 			Description: "import from card reader if DISK_NAME is provided, or incoming directory.",
 			Action: func(c *cli.Context) {
-				// TODO if args, import from disk with that name
-				// TODO if not, or after copying from disk, sort files in incoming
+				// check input
+				if len(c.Args()) > 1 {
+					fmt.Printf("Too many arguments. See usage below.\n\n")
+					cli.ShowCommandHelp(c, "import")
+					os.Exit(-1)
+				}
+				// do things.
+				err := importPictures(cc, c.Args().First())
+				if err != nil {
+					if !os.IsNotExist(err) {
+						fmt.Println("ERR: " + err.Error() + "\nStopping everything.")
+					}
+					os.Exit(-1)
+				}
 			},
 		},
 		{

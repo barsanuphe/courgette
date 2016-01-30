@@ -1,6 +1,12 @@
 package courgette
 
-import "github.com/spf13/viper"
+import (
+	"os"
+	"os/user"
+	"path/filepath"
+
+	"github.com/spf13/viper"
+)
 
 // Config holds all input necessary to deal with a Collection
 type Config struct {
@@ -37,5 +43,19 @@ func (c *Config) Load(configPath string) (err error) {
 
 // Check the configuration.
 func (c *Config) Check() (err error) {
+	return
+}
+
+// CheckValidCardReader makes sure the card is mounted and exists.
+func (c *Config) CheckValidCardReader(cardName string) (fullPath string, err error) {
+	thisUser, err := user.Current()
+	if err != nil {
+		return
+	}
+	// default path with udisks2
+	fullPath = filepath.Join("/run/media/", thisUser.Username, cardName)
+	if _, err = os.Stat(fullPath); os.IsNotExist(err) {
+		return "", err
+	}
 	return
 }
