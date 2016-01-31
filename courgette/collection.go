@@ -49,5 +49,10 @@ func (c *Collection) AnalyzeContents(subdir string) (numFiles int, err error) {
 
 // Refresh filenames in a given subdirectory.
 func (c *Collection) Refresh(subdir string) (numRenamed int, err error) {
+	fullPath := filepath.Join(c.Root, subdir)
+	if _, err = os.Stat(fullPath); os.IsNotExist(err) {
+		return 0, err
+	}
+	// TODO get all Pictures, call Rename for each
 	return
 }

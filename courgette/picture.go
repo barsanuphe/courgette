@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 
+	"fmt"
+
 	"github.com/barsanuphe/goexiftool"
 )
 
@@ -19,13 +21,18 @@ var reg = regexp.MustCompile(`^(.*?)_(\d{4,5})(-bw\d*)?(-\d*)?(\.jpg|\.cr2|\.mov
 // Picture can manipulate a picture file.
 type Picture struct {
 	goexiftool.MediaFile
-	Hash     string
-	NewPath  string
-	IsBW     bool
-	Number   int
-	Version  int
-	ID       string
-	Analyzed bool
+	Parent        string
+	NewFilename   string
+	Hash          string
+	IsBW          bool
+	Number        int
+	Version       int
+	FormattedDate string
+	ID            string
+	Camera        string
+	Lens          string
+	Extension     string
+	Analyzed      bool
 }
 
 // NewPicture initializes a Picture and parses its metadata with exiftool.
@@ -34,13 +41,15 @@ func NewPicture(filename string) (p *Picture, err error) {
 		return nil, err
 	}
 	p = &Picture{
-		goexiftool.MediaFile{filename, make(map[string]string)},
-		"", "", false, 0, 0, "", false,
+		goexiftool.MediaFile{Filename: filename, Info: make(map[string]string)},
+		filepath.Dir(filename),
+		"", "", false, 0, 0, "", "", "", "", "", false,
 	}
 	return
 }
 
-func (p *Picture) Analyze() (err error) {
+// Analyze a Picture to get its metadata and filename information.
+func (p *Picture) Analyze(c Config) (err error) {
 	err = p.AnalyzeMetadata()
 	if err != nil {
 		return
@@ -49,13 +58,30 @@ func (p *Picture) Analyze() (err error) {
 	if err != nil {
 		return
 	}
-	// TODO: parse filename too
+	// TODO: parse filename too + generate FormattedDate, ID, Camera, Lens with Config
 	p.Analyzed = true
 	return
 }
 
 // Rename a Picture from metadata.
-func (p *Picture) Rename() (err error) {
+func (p *Picture) Rename(c Config) (err error) {
+	if !p.Analyzed {
+		err = p.Analyze(c)
+		if err != nil {
+			return
+		}
+	}
+	p.NewFilename = fmt.Sprintf("%s_%s.%s_%d", p.FormattedDate, p.Camera, p.Lens, p.Number)
+	if p.IsBW {
+		p.NewFilename += "-bw"
+	}
+	if p.Version != 0 {
+		p.NewFilename += fmt.Sprintf("-%d", p.Version)
+	}
+	p.NewFilename += p.Extension
+	fmt.Printf("Renaming: %s to %s.\n", p.Filename, p.NewFilename)
+
+	// TODO set NewPath and os.Rename to it
 	return
 }
 
