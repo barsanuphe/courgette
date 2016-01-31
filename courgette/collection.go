@@ -5,6 +5,7 @@ package courgette
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 )
 
@@ -17,8 +18,14 @@ type Collection struct {
 // Import from card.
 func (c *Collection) Import(from string) (numImported int, err error) {
 	incomingTarget := filepath.Join(c.Root, c.Incoming)
+	// if it does not exist, create
+	if _, err = os.Stat(incomingTarget); os.IsNotExist(err) {
+		fmt.Println("Creating directory " + incomingTarget)
+		os.MkdirAll(incomingTarget, 0700)
+	}
 	fmt.Println("Moving pictures to " + incomingTarget)
 	// from -> c.Incoming
+	// TODO walk from card, create Picture, copy
 	// copy then remove source
 	return
 }

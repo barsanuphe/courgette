@@ -19,12 +19,39 @@ var reg = regexp.MustCompile(`^(.*?)_(\d{4,5})(-bw\d*)?(-\d*)?(\.jpg|\.cr2|\.mov
 // Picture can manipulate a picture file.
 type Picture struct {
 	goexiftool.MediaFile
-	Hash    string
-	NewPath string
-	IsBW    bool
-	Number  int
-	Version int
-	ID      string
+	Hash     string
+	NewPath  string
+	IsBW     bool
+	Number   int
+	Version  int
+	ID       string
+	Analyzed bool
+}
+
+// NewPicture initializes a Picture and parses its metadata with exiftool.
+func NewPicture(filename string) (p *Picture, err error) {
+	if _, err = os.Stat(filename); os.IsNotExist(err) {
+		return nil, err
+	}
+	p = &Picture{
+		goexiftool.MediaFile{filename, make(map[string]string)},
+		"", "", false, 0, 0, "", false,
+	}
+	return
+}
+
+func (p *Picture) Analyze() (err error) {
+	err = p.AnalyzeMetadata()
+	if err != nil {
+		return
+	}
+	err = p.ComputeHash()
+	if err != nil {
+		return
+	}
+	// TODO: parse filename too
+	p.Analyzed = true
+	return
 }
 
 // Rename a Picture from metadata.
