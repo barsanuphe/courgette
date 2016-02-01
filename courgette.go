@@ -34,6 +34,90 @@ func importPictures(cc courgette.Collection, cardName string) (err error) {
 	return
 }
 
+func findOrphans(cc courgette.Collection, subdir string) (err error) {
+	toParse := []courgette.SubDirectory{}
+	if subdir != "" {
+		// check it exists, get SubDirectory object if it does
+		subd, err := cc.GetSubDir(subdir)
+		if err != nil {
+			return err
+		}
+		// add to list
+		toParse = append(toParse, subd)
+	} else {
+		toParse = cc.Contents
+	}
+
+	allOrphans := courgette.Pictures{}
+	for _, subd := range toParse {
+		// Analyze
+		_, err := subd.Analyze(cc)
+		if err != nil {
+			return err
+		}
+		// find orphans
+		orphans, err := subd.FindOrphans()
+		if err != nil {
+			return err
+		}
+		// append to list
+		for _, o := range orphans {
+			allOrphans = append(allOrphans, o)
+		}
+	}
+
+	// TODO do something about allOrphans
+	// list + prompt for removal
+
+	return
+}
+
+func refresh(cc courgette.Collection, subdir string) (err error) {
+	toParse := []courgette.SubDirectory{}
+	if subdir != "" {
+		// check it exists, get SubDirectory object if it does
+		subd, err := cc.GetSubDir(subdir)
+		if err != nil {
+			return err
+		}
+		// add to list
+		toParse = append(toParse, subd)
+	} else {
+		toParse = cc.Contents
+	}
+
+	numRenamed := 0
+	for _, subd := range toParse {
+		// Analyze
+		_, err := subd.Analyze(cc)
+		if err != nil {
+			return err
+		}
+		// TODO loop over Jpgs, BwJpgs, RawFiles
+		for _, p := range subd.Jpgs {
+			wasRenamed, err := p.Rename(cc)
+			if err != nil {
+				panic(err)
+			}
+			if wasRenamed {
+				numRenamed++
+			}
+		}
+	}
+	fmt.Printf("Renamed %d pictures.", numRenamed)
+	return
+}
+
+func checkOneArgAtMost(c *cli.Context, operation string) (ok bool) {
+	// check input
+	if len(c.Args()) > 1 {
+		fmt.Printf("Too many arguments. See usage below.\n\n")
+		cli.ShowCommandHelp(c, operation)
+		os.Exit(-1)
+	}
+	return true
+}
+
 func main() {
 	fmt.Printf("\n# # # C O U R G E T T E # # #\n\n")
 	cc := courgette.Collection{}
@@ -60,19 +144,15 @@ func main() {
 			ArgsUsage:   "[DISK_NAME]",
 			Description: "import from card reader if DISK_NAME is provided, or incoming directory.",
 			Action: func(c *cli.Context) {
-				// check input
-				if len(c.Args()) > 1 {
-					fmt.Printf("Too many arguments. See usage below.\n\n")
-					cli.ShowCommandHelp(c, "import")
-					os.Exit(-1)
-				}
-				// do things.
-				err := importPictures(cc, c.Args().First())
-				if err != nil {
-					if !os.IsNotExist(err) {
-						fmt.Println("ERR: " + err.Error() + "\nStopping everything.")
+				if checkOneArgAtMost(c, "import") {
+					// do things.
+					err := importPictures(cc, c.Args().First())
+					if err != nil {
+						if !os.IsNotExist(err) {
+							fmt.Println("ERR: " + err.Error() + "\nStopping everything.")
+						}
+						os.Exit(-1)
 					}
-					os.Exit(-1)
 				}
 			},
 		},
@@ -93,7 +173,17 @@ func main() {
 			ArgsUsage:   "[SUBDIR]",
 			Description: "Raw pictures without jpg versions are flagged for deletion.\n   If SUBDIR is given, only this subdirectory is considered instead of the whole collection.",
 			Action: func(c *cli.Context) {
-				// TODO
+
+				if checkOneArgAtMost(c, "findorphans") {
+					// do things.
+					err := findOrphans(cc, c.Args().First())
+					if err != nil {
+						if !os.IsNotExist(err) {
+							fmt.Println("ERR: " + err.Error() + "\nStopping everything.")
+						}
+						os.Exit(-1)
+					}
+				}
 			},
 		},
 		{
@@ -103,7 +193,16 @@ func main() {
 			Usage:       "refresh filenames in a subdirectory.",
 			Description: "Rename pictures according to configuration and metadata, after import.\n   If SUBDIR is given, only this subdirectory is considered instead of the whole collection.",
 			Action: func(c *cli.Context) {
-				// TODO
+				if checkOneArgAtMost(c, "refresh") {
+					// do things.
+					err := refresh(cc, c.Args().First())
+					if err != nil {
+						if !os.IsNotExist(err) {
+							fmt.Println("ERR: " + err.Error() + "\nStopping everything.")
+						}
+						os.Exit(-1)
+					}
+				}
 			},
 		},
 		{
@@ -113,7 +212,9 @@ func main() {
 			Usage:       "show changes relative to last commit.",
 			Description: "Show changes since last commit.\n   If SUBDIR is given, only this subdirectory is considered instead of the whole collection.",
 			Action: func(c *cli.Context) {
-				// TODO
+				if checkOneArgAtMost(c, "diff") {
+					// TODO do things.
+				}
 			},
 		},
 		{
@@ -123,7 +224,10 @@ func main() {
 			Usage:       "accept changes in the collection.",
 			Description: "Accept changes in the collection and save the current state.\n   If SUBDIR is given, only this subdirectory is considered instead of the whole collection.",
 			Action: func(c *cli.Context) {
-				// TODO save hash and info
+				if checkOneArgAtMost(c, "commit") {
+					// TODO save hash and info
+				}
+
 			},
 		},
 	}
