@@ -21,6 +21,7 @@ var reg = regexp.MustCompile(`^(.*?)_(\d{4,5})(-bw\d*)?(-\d*)?(\.jpg|\.cr2|\.mov
 // Picture can manipulate a picture file.
 type Picture struct {
 	goexiftool.MediaFile
+	// TODO instead of Parent, subdir ie filepath.Rel(root, parent(filename))
 	Parent        string
 	NewFilename   string
 	Hash          string
@@ -36,24 +37,25 @@ type Picture struct {
 }
 
 // NewPicture initializes a Picture and parses its metadata with exiftool.
-func NewPicture(filename string) (p *Picture, err error) {
+func NewPicture(filename string, isBW bool, number int, version int, id string, extension string) (p *Picture, err error) {
 	if _, err = os.Stat(filename); os.IsNotExist(err) {
 		return nil, err
 	}
-	p = &Picture{
+	return &Picture{
 		goexiftool.MediaFile{Filename: filename, Info: make(map[string]string)},
 		filepath.Dir(filename),
-		"", "", false, 0, 0, "", "", "", "", "", false,
-	}
-	return
+		"", "", isBW, number, version, "", id, "", "", extension, false,
+	}, err
 }
 
 // Analyze a Picture to get its metadata and filename information.
-func (p *Picture) Analyze(c Config) (err error) {
+func (p *Picture) Analyze(c Collection) (err error) {
+	// TODO use interface Config instead of Collection
 	err = p.AnalyzeMetadata()
 	if err != nil {
 		return
 	}
+	// TODO: finc Camera/Lens/Date with Config
 	err = p.ComputeHash()
 	if err != nil {
 		return
@@ -64,13 +66,20 @@ func (p *Picture) Analyze(c Config) (err error) {
 }
 
 // Rename a Picture from metadata.
-func (p *Picture) Rename(c Config) (err error) {
+func (p *Picture) Rename(c Collection) (wasRenamed bool, err error) {
+	// TODO use interface Config instead of Collection
 	if !p.Analyzed {
 		err = p.Analyze(c)
 		if err != nil {
 			return
 		}
 	}
+	// TODO : what if Analyze shows that we're in the wrong subdir?
+	// TODO: which will happen if the file is in INCOMING
+	// Mon Jan 2 15:04:05 -0700 MST 2006
+	// TODO: new SubdirName
+
+	// new Filename
 	p.NewFilename = fmt.Sprintf("%s_%s.%s_%d", p.FormattedDate, p.Camera, p.Lens, p.Number)
 	if p.IsBW {
 		p.NewFilename += "-bw"
@@ -79,9 +88,15 @@ func (p *Picture) Rename(c Config) (err error) {
 		p.NewFilename += fmt.Sprintf("-%d", p.Version)
 	}
 	p.NewFilename += p.Extension
-	fmt.Printf("Renaming: %s to %s.\n", p.Filename, p.NewFilename)
+	// TODO: filepath.Join(Root, newSubdirName, p.NewFilename)
+	newPath := filepath.Join(p.Parent, p.NewFilename)
+	if p.Filename != newPath {
+		fmt.Printf("Renaming: %s -> %s.\n", p.Filename, p.NewFilename)
+		// rename
+		os.Rename(p.Filename, newPath)
+		wasRenamed = true
 
-	// TODO set NewPath and os.Rename to it
+	}
 	return
 }
 
