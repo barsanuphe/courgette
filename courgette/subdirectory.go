@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -22,35 +23,46 @@ func timeTrack(start time.Time, name string) {
 }
 
 // Analyze of a given subdirectory.
-func (s *SubDirectory) Analyze() (numFiles int, err error) {
+func (s *SubDirectory) Analyze(c Collection) (numFiles int, err error) {
+	// TODO use interface Config instead of Collection
 	defer timeTrack(time.Now(), "Scanned")
-	count := 0
 
 	filepath.Walk(s.Name, func(path string, f os.FileInfo, err error) (outErr error) {
 		if f.Mode().IsRegular() {
 			fileName := filepath.Base(path)
-
 			found := reg.FindStringSubmatch(fileName)
 			if len(found) == 6 {
+				var isBW bool
+				number, _ := strconv.Atoi(found[2])
+				if found[3] != "" {
+					isBW = true
+				}
+				version, _ := strconv.Atoi(found[4])
+				extension := found[5]
 				id := found[2] + found[1] // number + prefix
 
-				if found[5] == ".cr2" || found[5] == ".arw" {
-					// TODO create Picture with ID, etc, append to RawFiles
-					p := Picture{ID: id}
-					s.RawFiles = append(s.RawFiles, p)
-				} else if found[5] == ".jpg" {
-					// TODO create Picture with ID
-					// TODO if BW, append to BwJpgs
-					// TODO else, append to Jpgs
+				p, err := NewPicture(fileName, isBW, number, version, id, extension)
+				if err != nil {
+					return
 				}
-				count++
+				switch extension {
+				case ".cr2", ".arw":
+					s.RawFiles = append(s.RawFiles, *p)
+				case ".jpg":
+					if isBW {
+						s.BwJpgs = append(s.BwJpgs, *p)
+					} else {
+						s.Jpgs = append(s.Jpgs, *p)
+					}
+				}
+				numFiles++
 			} else {
 				fmt.Println("Error with ", fileName)
 			}
 		}
 		return
 	})
-	fmt.Printf("Found %d files.\n", count)
+	fmt.Printf("Found %d files.\n", numFiles)
 	return
 }
 
