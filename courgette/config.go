@@ -39,7 +39,6 @@ func (c *Config) Load(configPath string) (err error) {
 		c.Lenses = conf.GetStringMapString("lenses")
 		c.Cameras = conf.GetStringMapString("cameras")
 	}
-
 	return
 }
 

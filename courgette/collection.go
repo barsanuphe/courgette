@@ -38,21 +38,38 @@ func (c *Collection) SortNew() (numSorted int, err error) {
 
 // AnalyzeContents of a given subdirectory.
 func (c *Collection) AnalyzeContents(subdir string) (numFiles int, err error) {
-	for _, subd := range c.Contents {
-		if subd.Name == subdir {
-			numFiles, err = subd.Analyze()
-			return
-		}
+	subd, err := c.GetSubDir(subdir)
+	if err != nil {
+		return 0, err
 	}
-	return 0, errors.New("Subdir " + subdir + " not found")
+	numFiles, err = subd.Analyze(*c)
+	return
 }
 
 // Refresh filenames in a given subdirectory.
 func (c *Collection) Refresh(subdir string) (numRenamed int, err error) {
-	fullPath := filepath.Join(c.Root, subdir)
-	if _, err = os.Stat(fullPath); os.IsNotExist(err) {
+	subd, err := c.GetSubDir(subdir)
+	if err != nil {
 		return 0, err
 	}
-	// TODO get all Pictures, call Rename for each
+	// TODO loop over Pictures, BwPictures, RawFiles
+	for _, pic := range subd.Jpgs {
+		fmt.Println(pic.Filename)
+		// TODO analyze, rename
+	}
 	return
+}
+
+// GetSubDir returns the SubDirectory from its name
+func (c *Collection) GetSubDir(subdir string) (SubDirectory, error) {
+	fullPath := filepath.Join(c.Root, subdir)
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		return SubDirectory{}, err
+	}
+	for _, subd := range c.Contents {
+		if subd.Name == subdir {
+			return subd, nil
+		}
+	}
+	return SubDirectory{}, errors.New("Subdirectory " + subdir + " not found")
 }
