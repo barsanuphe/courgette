@@ -55,12 +55,41 @@ func (p *Picture) Analyze(c Collection) (err error) {
 	if err != nil {
 		return
 	}
-	// TODO: finc Camera/Lens/Date with Config
+	// get camera shortname, according to configuration
+	camera, err := p.GetCamera()
+	if err != nil {
+		p.Camera = "UnknownCamera"
+	} else {
+		cameraShortName, ok := c.Cameras[camera]
+		if !ok {
+			p.Camera = camera
+		} else {
+			p.Camera = cameraShortName
+		}
+	}
+	// get lens shortname, according to configuration
+	lens, err := p.GetLens()
+	if err != nil {
+		p.Lens = "UnknownLens"
+	} else {
+		lensShortName, ok := c.Lenses[lens]
+		if !ok {
+			p.Lens = lens
+		} else {
+			p.Lens = lensShortName
+		}
+	}
+	date, err := p.GetDate()
+	if err != nil {
+		p.FormattedDate = "UnknownDate"
+	} else {
+		// TODO: use format from config
+		p.FormattedDate = date.Format("2006-01-02-15h04m05s")
+	}
 	err = p.ComputeHash()
 	if err != nil {
 		return
 	}
-	// TODO: parse filename too + generate FormattedDate, ID, Camera, Lens with Config
 	p.Analyzed = true
 	return
 }
