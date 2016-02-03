@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 
+	"path/filepath"
+
 	"github.com/barsanuphe/courgette/courgette"
 	"github.com/codegangsta/cli"
 )
@@ -66,8 +68,14 @@ func findOrphans(cc courgette.Collection, subdir string) (err error) {
 		}
 	}
 
-	// TODO do something about allOrphans
-	// list + prompt for removal
+	if len(allOrphans) != 0 {
+		fmt.Println("Found orphans:")
+		for _, o := range allOrphans {
+			fmt.Println("\t - " + filepath.Base(o.Filename))
+		}
+		fmt.Println("Remove? Y/n")
+		// TODO scan and remove if necessary
+	}
 
 	return
 }
