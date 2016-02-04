@@ -15,6 +15,7 @@ type SubDirectory struct {
 	Jpgs     Pictures
 	BwJpgs   Pictures
 	RawFiles Pictures
+	Analyzed bool
 }
 
 func timeTrack(start time.Time, name string) {
@@ -63,14 +64,21 @@ func (s *SubDirectory) Analyze(c Collection) (numFiles int, err error) {
 		return
 	})
 	fmt.Printf("Found %d files.\n", numFiles)
+	s.Analyzed = true
 	return
 }
 
 // FindOrphans in a given subdirectory
-func (s *SubDirectory) FindOrphans() (orphans Pictures, err error) {
+func (s *SubDirectory) FindOrphans(c Collection) (orphans Pictures, err error) {
 	defer timeTrack(time.Now(), "Analyzed")
 
-	// TODO if not done: Analyze(subdir)
+	// Analyze if necessary
+	if !s.Analyzed {
+		_, err = s.Analyze(c)
+		if err != nil {
+			return Pictures{}, err
+		}
+	}
 
 	for _, raw := range s.RawFiles {
 		// search in Jpgs

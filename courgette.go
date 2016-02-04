@@ -52,13 +52,8 @@ func findOrphans(cc courgette.Collection, subdir string) (err error) {
 
 	allOrphans := courgette.Pictures{}
 	for _, subd := range toParse {
-		// Analyze
-		_, err := subd.Analyze(cc)
-		if err != nil {
-			return err
-		}
 		// find orphans
-		orphans, err := subd.FindOrphans()
+		orphans, err := subd.FindOrphans(cc)
 		if err != nil {
 			return err
 		}
@@ -101,8 +96,26 @@ func refresh(cc courgette.Collection, subdir string) (err error) {
 		if err != nil {
 			return err
 		}
-		// TODO loop over Jpgs, BwJpgs, RawFiles
+		// TODO better
 		for _, p := range subd.Jpgs {
+			wasRenamed, err := p.Rename(cc)
+			if err != nil {
+				panic(err)
+			}
+			if wasRenamed {
+				numRenamed++
+			}
+		}
+		for _, p := range subd.BwJpgs {
+			wasRenamed, err := p.Rename(cc)
+			if err != nil {
+				panic(err)
+			}
+			if wasRenamed {
+				numRenamed++
+			}
+		}
+		for _, p := range subd.RawFiles {
 			wasRenamed, err := p.Rename(cc)
 			if err != nil {
 				panic(err)
